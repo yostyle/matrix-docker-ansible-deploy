@@ -1,11 +1,15 @@
 # Setting up MX Puppet Discord (optional)
 
-**Note**: bridging to [Discord](https://discordapp.com/) can also happen via the [matrix-appservice-discord](configuring-playbook-bridge-appservice-discord.md) bridge supported by the playbook.
+**Note**: bridging to [Discord](https://discordapp.com/) can also happen via the [matrix-appservice-discord](configuring-playbook-bridge-appservice-discord.md)and [mautrix-discord](configuring-playbook-bridge-mautrix-discord.md) bridges supported by the playbook.   
+- For using as a Bot we recommend the [Appservice Discord](configuring-playbook-bridge-appservice-discord.md), because it supports plumbing.  
+- For personal use with a discord account we recommend the [mautrix-discord](configuring-playbook-bridge-mautrix-discord.md) bridge, because it is the most fully-featured and stable of the 3 Discord bridges supported by the playbook.
 
 The playbook can install and configure
 [mx-puppet-discord](https://github.com/matrix-discord/mx-puppet-discord) for you.
 
 See the project page to learn what it does and why it might be useful to you.
+
+**Note**: we actually use the [Beeper](https://www.beeper.com/)-maintained [fork of mx-puppet-discord](https://gitlab.com/beeper/mx-puppet-monorepo), because `matrix-discord/mx-puppet-discord` is a low-quality and poorly maintained project.
 
 To enable the [Discord](https://discordapp.com/) bridge just use the following
 playbook configuration:
@@ -13,8 +17,6 @@ playbook configuration:
 
 ```yaml
 matrix_mx_puppet_discord_enabled: true
-matrix_mx_puppet_discord_client_id: ""
-matrix_mx_puppet_discord_client_secret: ""
 ```
 
 

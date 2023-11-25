@@ -1,8 +1,8 @@
 # Setting up Mautrix Facebook (optional)
 
-The playbook can install and configure [mautrix-facebook](https://github.com/tulir/mautrix-facebook) for you.
+The playbook can install and configure [mautrix-facebook](https://github.com/mautrix/facebook) for you.
 
-See the project's [documentation](https://github.com/tulir/mautrix-facebook/blob/master/ROADMAP.md) to learn what it does and why it might be useful to you.
+See the project's [documentation](https://github.com/mautrix/facebook/blob/master/ROADMAP.md) to learn what it does and why it might be useful to you.
 
 ```yaml
 matrix_mautrix_facebook_enabled: true
@@ -24,10 +24,22 @@ If you would like to be able to administrate the bridge from your account it can
 matrix_mautrix_facebook_configuration_extension_yaml: |
   bridge:
     permissions:
-      '@YOUR_USERNAME:YOUR_DOMAIN': admin
+      '@YOUR_USERNAME:{{ matrix_domain }}': admin
 ```
 
-You may wish to look at `roles/matrix-bridge-mautrix-facebook/templates/config.yaml.j2` to find other things you would like to configure.
+Using both would look like
+
+```yaml
+matrix_mautrix_facebook_configuration_extension_yaml: |
+  bridge:
+    permissions:
+      '@YOUR_USERNAME:{{ matrix_domain }}': admin
+    encryption:
+      allow: true
+      default: true
+```
+
+You may wish to look at `roles/custom/matrix-bridge-mautrix-facebook/templates/config.yaml.j2` and `roles/custom/matrix-bridge-mautrix-facebook/defaults/main.yml` to find other things you would like to configure.
 
 
 ## Set up Double Puppeting
@@ -46,13 +58,7 @@ This is the recommended way of setting up Double Puppeting, as it's easier to ac
 
 When using this method, **each user** that wishes to enable Double Puppeting needs to follow the following steps:
 
-- retrieve a Matrix access token for yourself. You can use the following command:
-
-```
-curl \
---data '{"identifier": {"type": "m.id.user", "user": "YOUR_MATRIX_USERNAME" }, "password": "YOUR_MATRIX_PASSWORD", "type": "m.login.password", "device_id": "Mautrix-Facebook", "initial_device_display_name": "Mautrix-Facebook"}' \
-https://matrix.DOMAIN/_matrix/client/r0/login
-```
+- retrieve a Matrix access token for yourself. Refer to the documentation on [how to do that](obtaining-access-tokens.md).
 
 - send the access token to the bot. Example: `login-matrix MATRIX_ACCESS_TOKEN_HERE`
 
@@ -68,31 +74,6 @@ Send `login YOUR_FACEBOOK_EMAIL_ADDRESS` to the bridge bot to enable bridging fo
 If you run into trouble, check the [Troubleshooting](#troubleshooting) section below.
 
 After successfully enabling bridging, you may wish to [set up Double Puppeting](#set-up-double-puppeting), if you haven't already done so.
-
-
-## Set up community-grouping
-
-This is an **optional feature** that you may wish to enable.
-
-The Facebook bridge can create a Matrix community for you, which would contain all your chats and contacts.
-
-For this to work, the bridge's bot needs to have permissions to create communities (also referred to as groups).
-Since the bot is a non-admin user, you need to enable such group-creation for non-privileged users in [Synapse's settings](configuring-playbook-synapse.md).
-
-Here's an example configuration:
-
-```yaml
-matrix_synapse_configuration_extension_yaml: |
-  enable_group_creation: true
-  group_creation_prefix: "unofficial/"
-
-matrix_mautrix_facebook_configuration_extension_yaml: |
-  bridge:
-    community_template: "unofficial/facebook_{localpart}={server}"
-```
-
-Once the bridge is restarted, it would create a community and invite you to it. You need to accept the community invitation manually.
-If you don't see all your contacts, you may wish to send a `sync` message to the bot.
 
 
 ## Troubleshooting
@@ -116,3 +97,5 @@ Once connected, you should be able to verify that you're browsing the web throug
 Then proceed to log in to [Facebook/Messenger](https://www.facebook.com/).
 
 Once logged in, proceed to [set up bridging](#usage).
+
+If that doesn't work, enable 2FA [Facebook help page on enabling 2FA](https://www.facebook.com/help/148233965247823) and try to login again with a new password, and entering the 2FA code when prompted, it may take more then one try, in between attempts, check facebook.com to see if they are requiring another password change

@@ -1,23 +1,21 @@
 # Adjusting ma1sd Identity Server configuration (optional)
 
-By default, this playbook configures an [ma1sd](https://github.com/ma1uta/ma1sd) Identity Server for you.
+The playbook can configure the [ma1sd](https://github.com/ma1uta/ma1sd) Identity Server for you.
+
+ma1sd, being an Identity Server, is not strictly needed. It is only used for 3PIDs (3rd party identifiers like E-mail and phone numbers) and some [enhanced features](https://github.com/ma1uta/ma1sd/#features).
 
 This server is private by default, potentially at the expense of user discoverability.
 
 *ma1sd is a fork of [mxisd](https://github.com/kamax-io/mxisd) which was pronounced end of life 2019-06-21.*
 
-**Note**: enabling ma1sd (which is also the default), means that the `openid` API endpoints will be exposed on the Matrix Federation port (usually `8448`), even if [federation](configuring-playbook-federation.md) is disabled. It's something to be aware of, especially in terms of firewall whitelisting (make sure port `8448` is accessible).
+**Note**: enabling ma1sd, means that the `openid` API endpoints will be exposed on the Matrix Federation port (usually `8448`), even if [federation](configuring-playbook-federation.md) is disabled. It's something to be aware of, especially in terms of firewall whitelisting (make sure port `8448` is accessible).
 
-
-## Disabling ma1sd
-
-ma1sd, being an Identity Server, is not strictly needed. It is only used for 3PIDs (3rd party identifiers like E-mail and phone numbers) and some [enhanced features](https://github.com/ma1uta/ma1sd/#features).
-
-If you'd like for the playbook to not install ma1sd (or to uninstall it if it was previously installed), you can disable it in your configuration file (`inventory/host_vars/matrix.<your-domain>/vars.yml`):
+To enable ma1sd, use the following additional configuration in your `vars.yml` file:
 
 ```yaml
-matrix_ma1sd_enabled: false
+matrix_ma1sd_enabled: true
 ```
+
 
 ## Matrix.org lookup forwarding
 
@@ -35,7 +33,7 @@ matrix_ma1sd_matrixorg_forwarding_enabled: true
 ## Customizing email templates
 
 If you'd like to change the default email templates used by ma1sd, take a look at the `matrix_ma1sd_threepid_medium_email_custom_` variables
-(in the `roles/matrix-ma1sd/defaults/main.yml` file.
+(in the `roles/custom/matrix-ma1sd/defaults/main.yml` file.
 
 
 ## ma1sd-controlled Registration
@@ -88,7 +86,7 @@ You can refer to the [ma1sd website](https://github.com/ma1uta/ma1sd) for more d
 
 To use a more custom configuration, you can define a `matrix_ma1sd_configuration_extension_yaml` string variable
 and put your configuration in it.
-To learn more about how to do this, refer to the information about `matrix_ma1sd_configuration_extension_yaml` in the [default variables file](../roles/matrix-ma1sd/defaults/main.yml) of the ma1sd component.
+To learn more about how to do this, refer to the information about `matrix_ma1sd_configuration_extension_yaml` in the [default variables file](../roles/custom/matrix-ma1sd/defaults/main.yml) of the ma1sd component.
 
 ## Example: SMS verification
 

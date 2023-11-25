@@ -3,19 +3,34 @@
 **[Dimension](https://dimension.t2bot.io) can only be installed after Matrix services are installed and running.**
 If you're just installing Matrix services for the first time, please continue with the [Configuration](configuring-playbook.md) / [Installation](installing.md) flow and come back here later.
 
-**Note**: enabling Dimension, means that the `openid` API endpoints will be exposed on the Matrix Federation port (usually `8448`), even if [federation](configuring-playbook-federation.md) is disabled. It's something to be aware of, especially in terms of firewall whitelisting (make sure port `8448` is accessible).
+**Note**: Dimension is **[officially unmaintained](https://github.com/spantaleev/matrix-docker-ansible-deploy/issues/2806#issuecomment-1673559299)**. We recommend not bothering with installing it.
+
+**Note**: This playbook now supports running [Dimension](https://dimension.t2bot.io) in both a federated and [unfederated](https://github.com/turt2live/matrix-dimension/blob/master/docs/unfederated.md) environments. This is handled automatically based on the value of `matrix_synapse_federation_enabled`. Enabling Dimension, means that the `openid` API endpoints will be exposed on the Matrix Federation port (usually `8448`), even if [federation](configuring-playbook-federation.md) is disabled. It's something to be aware of, especially in terms of firewall whitelisting (make sure port `8448` is accessible).
 
 
-## Prerequisites
+## Decide on a domain and path
 
-This playbook now supports running [Dimension](https://dimension.t2bot.io) in both a federated and an [unfederated](https://github.com/turt2live/matrix-dimension/blob/master/docs/unfederated.md) environment. This is handled automatically based on the value of `matrix_synapse_federation_enabled`.
+By default, Dimension is configured to use its own dedicated domain (`dimension.DOMAIN`) and requires you to [adjust your DNS records](#adjusting-dns-records).
 
-Other important prerequisite is the `dimension.<your-domain>` DNS record being set up correctly. See [Configuring your DNS server](configuring-dns.md) on how to set up DNS record correctly.
+You can override the domain and path like this:
+
+```yaml
+# Switch to another hostname compared to the default (`dimension.{{ matrix_domain }}`)
+matrix_dimension_hostname: "integrations.{{ matrix_domain }}"
+
+```
+
+While there is a `matrix_dimension_path_prefix` variable for changing the path where Dimension is served, overriding it is not possible right now due to [this Dimension issue](https://github.com/turt2live/matrix-dimension/issues/510). You must serve Dimension at a dedicated subdomain until this issue is solved.
+
+
+## Adjusting DNS records
+
+Once you've decided on the domain and path, **you may need to adjust your DNS** records to point the Dimension domain to the Matrix server.
 
 
 ## Enable
 
-[Dimension integrations manager](https://dimension.t2bot.io) installation is disabled by default. You can enable it in your configuration file (`inventory/host_vars/matrix.<your-domain>/vars.yml`):
+To enable Dimension, add this to your configuration file (`inventory/host_vars/matrix.<your-domain>/vars.yml`):
 
 ```yaml
 matrix_dimension_enabled: true
@@ -24,7 +39,7 @@ matrix_dimension_enabled: true
 
 ## Define admin users
 
-These users can modify the integrations this Dimension supports. Admin interface is accessible by opening Dimension in Element and clicking the settings icon.
+These users can modify the integrations this Dimension supports.
 Add this to your configuration file (`inventory/host_vars/matrix.<your-domain>/vars.yml`):
 
 ```yaml
@@ -33,6 +48,7 @@ matrix_dimension_admins:
   - "@user2:{{ matrix_domain }}"
 ```
 
+The admin interface is accessible within Element by accessing it in any room and clicking the cog wheel/settings icon in the top right. Currently, Dimension can be opened in Element by the "Add widgets, bridges, & bots" link in the room information.
 
 ## Access token
 
@@ -40,27 +56,7 @@ We recommend that you create a dedicated Matrix user for Dimension (`dimension` 
 Follow our [Registering users](registering-users.md) guide to learn how to register **a regular (non-admin) user**.
 
 You are required to specify an access token (belonging to this new user) for Dimension to work.
-To get an access token for the Dimension user, you can follow one of two options:
-
-*Through an interactive login*:
-
-1. In a private browsing session (incognito window), open Element.
-2. Log in with the `dimension` user and its password.
-1. Set the display name and avatar, if required.
-2. In the settings page choose "Help & About", scroll down to the bottom and click `Access Token: <click to reveal>`.
-3. Copy the highlighted text to your configuration.
-4. Close the private browsing session. **Do not log out**. Logging out will invalidate the token, making it not work.
-
-*With CURL*
-
-```
-curl -X POST --header 'Content-Type: application/json' -d '{
-    "identifier": { "type": "m.id.user", "user": "YourDimensionUsername" },
-    "password": "YourDimensionPassword",
-    "type": "m.login.password"
-}' 'https://matrix.YOURDOMAIN/_matrix/client/r0/login'
-```
-*Change the "YourDimensionUser/Pass" URL accordigly*
+To get an access token for the Dimension user, you can follow the documentation on [how to do obtain an access token](obtaining-access-tokens.md).
 
 **Access tokens are sensitive information. Do not include them in any bug reports, messages, or logs. Do not share the access token with anyone.**
 
@@ -75,11 +71,13 @@ For more information on how to acquire an access token, visit [https://t2bot.io/
 
 ## Installation
 
-After these variables have been set, please run the following command to re-run setup and to restart Dimension:
+After these variables have been set and you have potentially [adjusted your DNS records](#adjusting-dns-records), please run the following command to re-run setup and to restart Dimension:
 
 ```
 ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,start
 ```
+
+After Dimension has been installed you may need to log out and log back in for it to pick up the new integrations manager. Then you can access integrations in Element by opening a room, clicking the Room info button (`i`) button in the top right corner of the screen, and then clicking Add widgets, bridges & bots.
 
 
 ## Jitsi domain
@@ -92,6 +90,6 @@ In the interim until the above limitation is resolved, an admin user needs to co
 ## Additional features
 
 To use a more custom configuration, you can define a `matrix_dimension_configuration_extension_yaml` string variable and put your configuration in it.
-To learn more about how to do this, refer to the information about `matrix_dimension_configuration_extension_yaml` in the [default variables file](../roles/matrix-dimension/defaults/main.yml) of the Dimension component.
+To learn more about how to do this, refer to the information about `matrix_dimension_configuration_extension_yaml` in the [default variables file](../roles/custom/matrix-dimension/defaults/main.yml) of the Dimension component.
 
 You can find all configuration options on [GitHub page of Dimension project](https://github.com/turt2live/matrix-dimension/blob/master/config/default.yaml).

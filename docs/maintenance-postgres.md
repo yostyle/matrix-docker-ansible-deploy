@@ -16,7 +16,7 @@ Table of contents:
 
 ## Getting a database terminal
 
-You can use the `/usr/local/bin/matrix-postgres-cli` tool to get interactive terminal access ([psql](https://www.postgresql.org/docs/11/app-psql.html)) to the PostgreSQL server.
+You can use the `/matrix/postgres/bin/cli` tool to get interactive terminal access ([psql](https://www.postgresql.org/docs/11/app-psql.html)) to the PostgreSQL server.
 
 If you are using an [external Postgres server](configuring-playbook-external-postgres.md), the above tool will not be available.
 
@@ -34,17 +34,22 @@ When in doubt, consider [making a backup](#backing-up-postgresql).
 
 ## Vacuuming PostgreSQL
 
-Deleting lots data from Postgres does not make it release disk space, until you perform a `VACUUM` operation.
+Deleting lots data from Postgres does not make it release disk space, until you perform a [`VACUUM` operation](https://www.postgresql.org/docs/current/sql-vacuum.html).
 
-To perform a `FULL` Postgres [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html), run the playbook with `--tags=run-postgres-vacuum`.
+You can run different `VACUUM` operations via the playbook, with the default preset being `vacuum-complete`:
 
-Example:
+- (default) `vacuum-complete`: stops all services temporarily and runs `VACUUM FULL VERBOSE ANALYZE`.
+- `vacuum-full`: stops all services temporarily and runs `VACUUM FULL VERBOSE`
+- `vacuum`: runs `VACUUM VERBOSE` without stopping any services
+- `vacuum-analyze` runs `VACUUM VERBOSE ANALYZE` without stopping any services
+- `analyze` runs `ANALYZE VERBOSE` without stopping any services (this is just [ANALYZE](https://www.postgresql.org/docs/current/sql-analyze.html) without doing a vacuum, so it's faster)
 
-```bash
-ansible-playbook -i inventory/hosts setup.yml --tags=run-postgres-vacuum,start
-```
+**Note**: for the `vacuum-complete` and `vacuum-full` presets, you'll need plenty of available disk space in your Postgres data directory (usually `/matrix/postgres/data`). These presets also stop all services (e.g. Synapse, etc.) while the vacuum operation is running.
 
-**Note**: this will automatically stop Synapse temporarily and restart it later. You'll also need plenty of available disk space in your Postgres data directory (usually `/matrix/postgres/data`).
+Example playbook invocations:
+
+- `just run-tags run-postgres-vacuum`: runs the default `vacuum-complete` preset and restarts all services
+- `just run-tags run-postgres-vacuum -e postgres_vacuum_preset=analyze`: runs the `analyze` preset with all services remaining operational at all times
 
 
 ## Backing up PostgreSQL
@@ -78,7 +83,11 @@ Upgrades must be performed manually.
 
 This playbook can upgrade your existing Postgres setup with the following command:
 
-	ansible-playbook -i inventory/hosts setup.yml --tags=upgrade-postgres
+```sh
+just run-tags upgrade-postgres
+```
+
+**Warning: If you're using Borg Backup keep in mind that there is no official Postgres 16 support yet.**
 
 **The old Postgres data directory is backed up** automatically, by renaming it to `/matrix/postgres/data-auto-upgrade-backup`.
 To rename to a different path, pass some extra flags to the command above, like this: `--extra-vars="postgres_auto_upgrade_backup_data_path=/another/disk/matrix-postgres-before-upgrade"`
@@ -97,63 +106,15 @@ Example: `--extra-vars="postgres_dump_name=matrix-postgres-dump.sql"`
 
 ## Tuning PostgreSQL
 
-PostgreSQL can be tuned to make it run faster. This is done by passing extra arguments to Postgres with the `matrix_postgres_process_extra_arguments` variable. You should use a website like https://pgtune.leopard.in.ua/ or information from https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server to determine what Postgres settings you should change.
+PostgreSQL can be [tuned](https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server) to make it run faster. This is done by passing extra arguments to the Postgres process.
 
-**Note**: the configuration generator at https://pgtune.leopard.in.ua/ adds spaces around the `=` sign, which is invalid. You'll need to remove it manually (`max_connections = 300` -> `max_connections=300`)
+The [Postgres Ansible role](https://github.com/devture/com.devture.ansible.role.postgres) **already does some tuning by default**, which matches the [tuning logic](https://github.com/le0pard/pgtune/blob/master/src/features/configuration/configurationSlice.js) done by websites like https://pgtune.leopard.in.ua/.
+You can manually influence some of the tuning variables . These parameters (variables) are injected via the `devture_postgres_postgres_process_extra_arguments_auto` variable.
 
-### Here are some examples:
+Most users should be fine with the automatically-done tuning. However, you may wish to:
 
-These are not recommended values and they may not work well for you. This is just to give you an idea of some of the options that can be set. If you are an experienced PostgreSQL admin feel free to update this documentation with better examples.
+- **adjust the automatically-deterimned tuning parameters manually**: change the values for the tuning variables defined in the Postgres role's [default configuration file](https://github.com/devture/com.devture.ansible.role.postgres/blob/main/defaults/main.yml) (see `devture_postgres_max_connections`, `devture_postgres_data_storage` etc). These variables are ultimately passed to Postgres via a `devture_postgres_postgres_process_extra_arguments_auto` variable
 
-Here is an example config for a small 2 core server with 4GB of RAM and SSD storage:
-```
-matrix_postgres_process_extra_arguments: [
-  "-c shared_buffers=128MB",
-  "-c effective_cache_size=2304MB",
-  "-c effective_io_concurrency=100",
-  "-c random_page_cost=2.0",
-  "-c min_wal_size=500MB",
-]
-```
+- **turn automatically-performed tuning off**: override it like this: `devture_postgres_postgres_process_extra_arguments_auto: []`
 
-Here is an example config for a 4 core server with 8GB of RAM on a Virtual Private Server (VPS); the paramters have been configured using https://pgtune.leopard.in.ua with the following setup: PostgreSQL version 12, OS Type: Linux, DB Type: Mixed type of application, Data Storage: SSD storage:
-```
-matrix_postgres_process_extra_arguments: [
-  "-c max_connections=100",
-  "-c shared_buffers=2GB",
-  "-c effective_cache_size=6GB",
-  "-c maintenance_work_mem=512MB",
-  "-c checkpoint_completion_target=0.9",
-  "-c wal_buffers=16MB",
-  "-c default_statistics_target=100",
-  "-c random_page_cost=1.1",
-  "-c effective_io_concurrency=200",
-  "-c work_mem=5242kB",
-  "-c min_wal_size=1GB",
-  "-c max_wal_size=4GB",
-  "-c max_worker_processes=4",
-  "-c max_parallel_workers_per_gather=2",
-  "-c max_parallel_workers=4",
-  "-c max_parallel_maintenance_workers=2",
-]
-```
-
-Here is an example config for a large 6 core server with 24GB of RAM:
-```
-matrix_postgres_process_extra_arguments: [
-  "-c max_connections=40",
-  "-c shared_buffers=1536MB",
-  "-c checkpoint_completion_target=0.7",
-  "-c wal_buffers=16MB",
-  "-c default_statistics_target=100",
-  "-c random_page_cost=1.1",
-  "-c effective_io_concurrency=100",
-  "-c work_mem=2621kB",
-  "-c min_wal_size=1GB",
-  "-c max_wal_size=4GB",
-  "-c max_worker_processes=6",
-  "-c max_parallel_workers_per_gather=3",
-  "-c max_parallel_workers=6",
-  "-c max_parallel_maintenance_workers=3",
-]
-```
+- **add additional tuning parameters**: define your additional Postgres configuration parameters in `devture_postgres_postgres_process_extra_arguments_custom`. See `devture_postgres_postgres_process_extra_arguments_auto` defined in the Postgres role's [default configuration file](https://github.com/devture/com.devture.ansible.role.postgres/blob/main/defaults/main.yml) for inspiration

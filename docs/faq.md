@@ -55,7 +55,7 @@ There are 3 ways to get into Martix, depending on your technical ability and nee
 
 - **using the existing default server** - the easiest way is to use an existing server. The largest public Matrix server is `matrix.org` and it's configured as a default server in clients such as [Element](https://element.io) and many others. Just use Element on the browser via that link (or download the Element app on a smartphone), create an account and start chatting.
 
-- **using some other server** - instead of using the largest public server (`matrix.org`), you can use another public one. Here's a [list of public Matrix servers](https://publiclist.anchel.nl/) to choose from. Again, you download [Element](https://element.io) or [some other client](https://matrix.org/clients/) of your choosing and adjust the homeserver URL during login.
+- **using some other server** - instead of using the largest public server (`matrix.org`), you can use another public one. Here's a [list of public Matrix servers](https://joinmatrix.org/servers/) to choose from. Again, you download [Element](https://element.io) or [some other client](https://matrix.org/clients/) of your choosing and adjust the homeserver URL during login.
 
 - **using your own server** - running your own server puts you in ultimate control of your data. It also lets you have your own user identifiers (e.g. `@bob:your-domain.com`). See [How do I set up my own Matrix server](#how-do-i-set-up-my-own-matrix-server).
 
@@ -121,11 +121,11 @@ This is similar to the [EMnify/matrix-synapse-auto-deploy](https://github.com/EM
 
 - this one **can be executed more than once** without causing trouble
 
-- works on various distros: **CentOS** (7.0+), Debian-based distributions (**Debian** 9/Stretch+, **Ubuntu** 16.04+), **Archlinux**
+- works on various distros: **CentOS** (7.0+), Debian-based distributions (**Debian** 10/Buster+, **Ubuntu** 18.04+), **Archlinux**
 
 - this one installs everything in a single directory (`/matrix` by default) and **doesn't "contaminate" your server** with files all over the place
 
-- this one **doesn't necessarily take over** ports 80 and 443. By default, it sets up nginx for you there, but you can also [use your own webserver](configuring-playbook-own-webserver.md)
+- this one **doesn't necessarily take over** ports 80 and 443. By default, it sets up [Traefik](https://doc.traefik.io/traefik/) for you there, but you can also [use your own webserver](configuring-playbook-own-webserver.md)
 
 - this one **runs everything in Docker containers**, so it's likely more predictable and less fragile (see [Docker images used by this playbook](container-images.md))
 
@@ -226,7 +226,7 @@ Using a separate domain name is easier to manage (although it's a little hard to
 
 We allow `matrix.DOMAIN` to be the Matrix server handling Matrix stuff for `DOMAIN` by [Server Delegation](howto-server-delegation.md). During the installation procedure, we recommend that you set up server delegation using the [.well-known](configuring-well-known.md) method.
 
-If you'd really like to install Matrix services directly on the base domain, see [How do I install on matrix.DOMAIN without involving the base DOMAIN?](#how-do-i-install-on-matrixdomain-without-involving-the-base-domain).
+If you'd really like to install Matrix services directly on the base domain, see [How do I install on matrix.DOMAIN without involving the base DOMAIN?](#how-do-i-install-on-matrixdomain-without-involving-the-base-domain)
 
 ### I don't control anything on the base domain and can't set up delegation to matrix.DOMAIN. What do I do?
 
@@ -262,7 +262,7 @@ matrix_server_fqn_element: "element.YOUR_BASE_DOMAIN"
 # Feel free to use `dimension.matrix.YOUR_BASE_DOMAIN`, if you'd prefer that.
 matrix_server_fqn_dimension: "dimension.YOUR_BASE_DOMAIN"
 
-# This is where you access Jitsi (if enabled via `matrix_jitsi_enabled: true`; NOT enabled by default).
+# This is where you access Jitsi (if enabled via `jitsi_enabled: true`; NOT enabled by default).
 #
 # Feel free to use `jitsi.matrix.YOUR_BASE_DOMAIN`, if you'd prefer that.
 matrix_server_fqn_jitsi: "jitsi.YOUR_BASE_DOMAIN"
@@ -317,12 +317,12 @@ If you've installed [Jitsi](configuring-playbook-jitsi.md) (not installed by def
 Yes, we can stop installing Docker ourselves. Just use this in your `vars.yml` file:
 
 ```yaml
-matrix_docker_installation_enabled: true
+matrix_playbook_docker_installation_enabled: false
 ```
 
 ### I run another webserver on the same server where I wish to install Matrix. What now?
 
-By default, we install a webserver for you (nginx), but you can also use [your own webserver](configuring-playbook-own-webserver.md).
+By default, we install a webserver for you ([Traefik](https://doc.traefik.io/traefik/)), but you can also use [your own webserver](configuring-playbook-own-webserver.md).
 
 ### How is the effective configuration determined?
 
@@ -336,11 +336,13 @@ Configuration variables are defined in multiple places in this playbook and are 
 
 ### What configuration variables are available?
 
-You can discover the variables you can override in each role (`role/matrix*/defaults/main.yml`).
+You can discover the variables you can override in each role (`roles/*/*/defaults/main.yml`).
 
 As described in [How is the effective configuration determined?](#how-is-the-effective-configuration-determined), these role-defaults may be overriden by values defined in `group_vars/matrix_servers`.
 
 Refer to both of these for inspiration. Still, as mentioned in [Configuring the playbook](configuring-playbook.md), you're only ever supposed to edit your own `inventory/host_vars/matrix.DOMAIN/vars.yml` file and nothing else inside the playbook (unless you're meaning to contribute new features).
+
+**Note**: some of the roles (`roles/galaxy/*`) live in separate repositories and are only installed after your run `just roles` (or `make roles`).
 
 ### I'd like to adjust some configuration which doesn't have a corresponding variable. How do I do it?
 
@@ -352,7 +354,9 @@ See [What configuration variables are available?](#what-configuration-variables-
 
 Besides that, each role (component) aims to provide a `matrix_SOME_COMPONENT_configuration_extension_yaml` (or `matrix_SOME_COMPONENT_configuration_extension_json`) variable, which can be used to override the configuration.
 
-Check each role's `role/matrix*/defaults/main.yml` for the corresponding variable and an example for how use it.
+Check each role's `roles/*/*/defaults/main.yml` for the corresponding variable and an example for how use it.
+
+**Note**: some of the roles (`roles/galaxy/*`) live in separate repositories and are only installed after your run `just roles` (or `make roles`).
 
 
 ## Installation
@@ -461,15 +465,8 @@ After verifying that everything still works after the Postgres upgrade, you can 
 
 ### How do I debug or force SSL certificate renewal?
 
-SSL certificate renewal normally happens automatically via [systemd timers](https://wiki.archlinux.org/index.php/Systemd/Timers).
+SSL certificates are managed automatically by the [Traefik](https://doc.traefik.io/traefik/) reverse-proxy server.
 
-If you're having trouble with SSL certificate renewal, you can inspect the renewal logs using:
+If you're having trouble with SSL certificate renewal, check the Traefik logs (`journalctl -fu matrix-traefik`).
 
-- `journalctl -fu matrix-ssl-lets-encrypt-certificates-renew.service`
-- *or* by looking at the log files in `/matrix/ssl/log/`
-
-To trigger renewal, run: `systemctl start matrix-ssl-lets-encrypt-certificates-renew.service`. You can then take a look at the logs again.
-
-If you're using the integrated webserver (`matrix-nginx-proxy`), you can reload it manually like this: `systemctl reload matrix-nginx-proxy`. Reloading also happens periodically via a systemd timer.
-
-If you're [using your own webserver](configuring-playbook-own-webserver.md) instead of the integrated one (`matrix-nginx-proxy`) you may also need to reload/restart it, to make it pick up the renewed SSL certificate files.
+If you're [using your own webserver](configuring-playbook-own-webserver.md) instead of the integrated one (Traefik), you should investigate in another way.

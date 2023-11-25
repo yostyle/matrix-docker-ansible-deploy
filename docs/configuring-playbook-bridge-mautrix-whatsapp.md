@@ -1,19 +1,49 @@
 # Setting up Mautrix Whatsapp (optional)
 
-The playbook can install and configure [mautrix-whatsapp](https://github.com/tulir/mautrix-whatsapp) for you.
+The playbook can install and configure [mautrix-whatsapp](https://github.com/mautrix/whatsapp) for you.
 
-See the project's [documentation](https://github.com/tulir/mautrix-whatsapp/wiki) to learn what it does and why it might be useful to you.
+See the project's [documentation](https://docs.mau.fi/bridges/go/whatsapp/index.html) to learn what it does and why it might be useful to you.
 
 Use the following playbook configuration:
 
 ```yaml
 matrix_mautrix_whatsapp_enabled: true
+``` 
+Whatsapp multidevice beta is required, now it is enough if Whatsapp is connected to the Internet every 2 weeks.
+
+The relay bot functionality is off by default. If you would like to enable the relay bot, add the following to your `vars.yml` file:
+```yaml
+matrix_mautrix_whatsapp_bridge_relay_enabled: true
 ```
 
+By default, only admins are allowed to set themselves as relay users. To allow anyone on your homeserver to set themselves as relay users add this to your `vars.yml` file:
+```yaml
+matrix_mautrix_whatsapp_bridge_relay_admin_only: false
+```
+
+If you want to activate the relay bot in a room, use `!whatsapp set-relay`.
+Use `!whatsapp unset-relay` to deactivate.
+
+## Enable backfilling history
+This requires a server with MSC2716 support, which is currently an experimental feature in synapse.
+Note that as of Synapse 1.46, there are still some bugs with the implementation, especially if using event persistence workers.
+Use the following playbook configuration:
+
+```yaml
+matrix_synapse_configuration_extension_yaml: |
+  experimental_features:
+    msc2716_enabled: true
+```
+```yaml
+matrix_mautrix_whatsapp_configuration_extension_yaml:
+  bridge:
+    history_sync:
+      backfill: true
+```
 
 ## Set up Double Puppeting
 
-If you'd like to use [Double Puppeting](https://github.com/tulir/mautrix-whatsapp/wiki/Authentication#replacing-whatsapp-accounts-matrix-puppet-with-matrix-account) (hint: you most likely do), you have 2 ways of going about it.
+If you'd like to use [Double Puppeting](https://docs.mau.fi/bridges/general/double-puppeting.html) (hint: you most likely do), you have 2 ways of going about it.
 
 ### Method 1: automatically, by enabling Shared Secret Auth
 
@@ -27,13 +57,7 @@ This is the recommended way of setting up Double Puppeting, as it's easier to ac
 
 When using this method, **each user** that wishes to enable Double Puppeting needs to follow the following steps:
 
-- retrieve a Matrix access token for yourself. You can use the following command:
-
-```
-curl \
---data '{"identifier": {"type": "m.id.user", "user": "YOUR_MATRIX_USERNAME" }, "password": "YOUR_MATRIX_PASSWORD", "type": "m.login.password", "device_id": "Mautrix-Whatsapp", "initial_device_display_name": "Mautrix-Whatsapp"}' \
-https://matrix.DOMAIN/_matrix/client/r0/login
-```
+- retrieve a Matrix access token for yourself. Refer to the documentation on [how to do that](obtaining-access-tokens.md).
 
 - send the access token to the bot. Example: `login-matrix MATRIX_ACCESS_TOKEN_HERE`
 

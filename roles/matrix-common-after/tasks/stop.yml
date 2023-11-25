@@ -1,7 +1,0 @@
----
-
-- name: Ensure Matrix services stopped
-  service:
-    name: matrix.target
-    enabled: false
-    state: stopped

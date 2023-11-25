@@ -49,6 +49,7 @@ To use DNS SRV record validation, you need to:
 
 - ensure that you are serving the Matrix Federation API (tcp/8448) with a certificate for `<your-domain>` (not `matrix.<your-domain>`!). Getting this certificate to the `matrix.<your-domain>` server may be complicated. The playbook's automatic SSL obtaining/renewal flow will likely not work and you'll need to copy certificates around manually. See below.
 
+For more details on [how to configure the playbook to work with SRV delegation](howto-srv-server-delegation.md)
 
 ### Obtaining certificates
 
@@ -82,8 +83,8 @@ Based on your setup, you have different ways to go about it:
 #
 # NOTE: these are in-container paths. `/matrix/ssl` on the host is mounted into the container
 # at the same path (`/matrix/ssl`) by default, so if that's the path you need, it would be seamless.
-matrix_nginx_proxy_proxy_matrix_federation_api_ssl_certificate: /matrix/ssl/config/live/matrix.<your-domain>/fullchain.pem
-matrix_nginx_proxy_proxy_matrix_federation_api_ssl_certificate_key: /matrix/ssl/config/live/matrix.<your-domain>/privkey.pem
+matrix_nginx_proxy_proxy_matrix_federation_api_ssl_certificate: /matrix/ssl/config/live/<your-domain>/fullchain.pem
+matrix_nginx_proxy_proxy_matrix_federation_api_ssl_certificate_key: /matrix/ssl/config/live/<your-domain>/privkey.pem
 ```
 
 If your files are not in `/matrix/ssl` but in some other location, you would need to mount them into the container:

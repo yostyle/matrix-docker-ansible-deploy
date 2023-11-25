@@ -21,20 +21,32 @@ You can use the playbook to [register a new user](registering-users.md):
 ansible-playbook -i inventory/hosts setup.yml --extra-vars='username=bot.go-neb password=PASSWORD_FOR_THE_BOT admin=no' --tags=register-user
 ```
 
+Once the user is created you can [obtain an access token](obtaining-access-tokens.md).
 
-## Getting an access token
 
-If you use curl, you can get an access token like this:
+## Decide on a domain and path
 
+By default, Go-NEB is configured to use its own dedicated domain (`goneb.DOMAIN`) and requires you to [adjust your DNS records](#adjusting-dns-records).
+
+You can override the domain and path like this:
+
+```yaml
+# Switch to the domain used for Matrix services (`matrix.DOMAIN`),
+# so we won't need to add additional DNS records for Go-NEB.
+matrix_bot_go_neb_hostname: "{{ matrix_server_fqn_matrix }}"
+
+# Expose under the /go-neb subpath
+matrix_bot_go_neb_path_prefix: /go-neb
 ```
-curl -X POST --header 'Content-Type: application/json' -d '{
-    "identifier": { "type": "m.id.user", "user": "bot.go-neb" },
-    "password": "a strong password",
-    "type": "m.login.password"
-}' 'https://matrix.YOURDOMAIN/_matrix/client/r0/login'
-```
 
-Alternatively, you can use a full-featured client (such as Element) to log in and get the access token from there (note: don't log out from the client as that will invalidate the token), but doing so might lead to decryption problems. That warning comes from [here](https://github.com/matrix-org/go-neb#quick-start).
+**NOTE**: When using `matrix-nginx-proxy` instead of Traefik, you won't be able to override the path prefix. You can only override the domain, but that needs to happen using another variable: `matrix_server_fqn_go_neb` (e.g. `matrix_server_fqn_go_neb: "mybot.{{ matrix_domain }}"`).
+
+
+## Adjusting DNS records
+
+Once you've decided on the domain and path, **you may need to adjust your DNS** records to point the Go-NEB domain to the Matrix server.
+
+If you've decided to reuse the `matrix.` domain, you won't need to do any extra DNS configuration.
 
 
 ## Adjusting the playbook configuration
@@ -198,17 +210,15 @@ matrix_bot_go_neb_services:
       # Each room will get the notification with the alert rendered with the given template
       rooms:
         "!someroomid:domain.tld":
-          text_template: "{{range .Alerts -}} [{{ .Status }}] {{index .Labels \"alertname\" }}: {{index .Annotations \"description\"}} {{ end -}}"
-          html_template: "{{range .Alerts -}}  {{ $severity := index .Labels \"severity\" }}    {{ if eq .Status \"firing\" }}      {{ if eq $severity \"critical\"}}        <font color='red'><b>[FIRING - CRITICAL]</b></font>      {{ else if eq $severity \"warning\"}}        <font color='orange'><b>[FIRING - WARNING]</b></font>      {{ else }}        <b>[FIRING - {{ $severity }}]</b>      {{ end }}    {{ else }}      <font color='green'><b>[RESOLVED]</b></font>    {{ end }}  {{ index .Labels \"alertname\"}} : {{ index .Annotations \"description\"}}   <a href=\"{{ .GeneratorURL }}\">source</a><br/>{{end -}}"
+          text_template: "{% raw %}{{range .Alerts -}} [{{ .Status }}] {{index .Labels \"alertname\" }}: {{index .Annotations \"description\"}} {{ end -}}{% endraw %}"
+          html_template: "{% raw %}{{range .Alerts -}}  {{ $severity := index .Labels \"severity\" }}    {{ if eq .Status \"firing\" }}      {{ if eq $severity \"critical\"}}        <font color='red'><b>[FIRING - CRITICAL]</b></font>      {{ else if eq $severity \"warning\"}}        <font color='orange'><b>[FIRING - WARNING]</b></font>      {{ else }}        <b>[FIRING - {{ $severity }}]</b>      {{ end }}    {{ else }}      <font color='green'><b>[RESOLVED]</b></font>    {{ end }}  {{ index .Labels \"alertname\"}} : {{ index .Annotations \"description\"}}   <a href=\"{{ .GeneratorURL }}\">source</a><br/>{{end -}}{% endraw %}"
           msg_type: "m.text"  # Must be either `m.text` or `m.notice`
 ```
 
 
 ## Installing
 
-Don't forget to add `goneb.<your-domain>` to DNS as described in [Configuring DNS](configuring-dns.md) before running the playbook.
-
-After configuring the playbook, run the [installation](installing.md) command again:
+After potentially [adjusting DNS records](#adjusting-dns-records) and configuring the playbook, run the [installation](installing.md) command again:
 
 ```
 ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,start

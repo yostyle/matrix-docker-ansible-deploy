@@ -1,7 +1,6 @@
 # Configure Nginx (optional, advanced)
 
-By default, this playbook installs its own nginx webserver (in a Docker container) which listens on ports 80 and 443.
-If that's alright, you can skip this.
+**Note**: the playbook is [in the process of moving to Traefik](../CHANGELOG.md#reverse-proxy-configuration-changes-and-initial-traefik-support). Traefik is already the default reverse-proxy for new installations and existing users are also strongly encouraged to switch to Traefik. As such, this **nginx documentation below may be incomplete or misleading**.
 
 
 ## Using Nginx status
@@ -42,7 +41,7 @@ Besides changing the preset (`matrix_nginx_proxy_ssl_preset`), you can also dire
 - `matrix_nginx_proxy_ssl_prefer_server_ciphers`: for specifying if the server or the client choice when negotiating the cipher. It can set to `on` or `off`.
 - `matrix_nginx_proxy_ssl_ciphers`: for specifying the SSL Cipher suites used by nginx.
 
-For more information about these variables, check the `roles/matrix-nginx-proxy/defaults/main.yml` file.
+For more information about these variables, check the `roles/custom/matrix-nginx-proxy/defaults/main.yml` file.
 
 ## Synapse + OpenID Connect for Single-Sign-On
 
@@ -80,5 +79,5 @@ matrix_nginx_proxy_proxy_http_additional_server_configuration_blocks:
     # These lines will be included in the nginx configuration.
     # This is at the top level of the file, so you will need to define all of the `server { ... }` blocks.
   - |
-    # For advanced use, have a look at the template files in `roles/matrix-nginx-proxy/templates/nginx/conf.d`
+    # For advanced use, have a look at the template files in `roles/custom/matrix-nginx-proxy/templates/nginx/conf.d`
 ```

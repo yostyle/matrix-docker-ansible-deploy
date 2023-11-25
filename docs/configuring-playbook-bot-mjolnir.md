@@ -24,46 +24,16 @@ If you would like Mjolnir to be able to deactivate users, move aliases, shutdown
 
 ## 2. Get an access token
 
-If you use curl, you can get an access token like this:
-
-```
-curl -X POST --header 'Content-Type: application/json' -d '{
-    "identifier": { "type": "m.id.user", "user": "bot.mjolnir" },
-    "password": "PASSWORD_FOR_THE_BOT",
-    "type": "m.login.password"
-}' 'https://matrix.DOMAIN/_matrix/client/r0/login'
-```
-
-Alternatively, you can use a full-featured client (such as Element) to log in and get the access token from there (note: don't log out from the client as that will invalidate the token).
+Refer to the documentation on [how to obtain an access token](obtaining-access-tokens.md).
 
 
 ## 3. Make sure the account is free from rate limiting
 
-You will need to prevent Synapse from rate limiting the bot's account. This is not an optional step. If you do not do this step Mjolnir will crash. [Currently there is no Synapse config option for this](https://github.com/matrix-org/synapse/issues/6286) so you have to manually edit the Synapse database. Manually editing the Synapse database is rarely a good idea but in this case it is required. Please ask for help if you are uncomfortable with these steps.
+You will need to prevent Synapse from rate limiting the bot's account. This is not an optional step. If you do not do this step Mjolnir will crash. This can be done using Synapse's [admin API](https://matrix-org.github.io/synapse/latest/admin_api/user_admin_api.html#override-ratelimiting-for-users). Please ask for help if you are uncomfortable with these steps or run into issues.
 
-1. Copy the statement below into a text editor. 
+If your Synapse Admin API is exposed to the internet for some reason like running the Synapse Admin Role [Link](/docs/configuring-playbook-synapse-admin.md) or running `matrix_nginx_proxy_proxy_matrix_client_api_forwarded_location_synapse_admin_api_enabled: true` in your playbook config. If your API is not externally exposed you should still be able to on the local host for your synapse run these commands. 
 
-	```
-	INSERT INTO ratelimit_override VALUES ('@bot.mjolnir:DOMAIN', 0, 0);
-	```
-
-1. Change the username (`@bot.mjolnir:DOMAIN`) to the username you used when you registered the bot's account. You must change `DOMAIN` to your server's domain.
-
-1. Get a database terminal by following these steps: [maintenance-postgres.md#getting-a-database-terminal](maintenance-postgres.md#getting-a-database-terminal)
-
-1. Connect to Synapse's database by typing `\connect synapse` into the database terminal
-
-1. Paste in the `INSERT INTO` command that you edited and press enter.
-
-You can run `SELECT * FROM ratelimit_override;` to see if it worked. If the output looks like this:
-
-```
-      user_id          | messages_per_second | burst_count
------------------------+---------------------+-------------
- @bot.mjolnir:raim.ist |                   0 |           0`
-```
-then you did it correctly.
-
+The following command works on semi up to date Windows 10 installs and All Windows 11 installations and other systems that ship curl. `curl --header "Authorization: Bearer <access_token>" -X POST https://matrix.example.com/_synapse/admin/v1/users/@example:example.com/override_ratelimit` Replace `@example:example.com` with the MXID of your Mjolnir and example.com with your homeserver domain. You can easily obtain an access token for a homeserver admin account the same way you can obtain an access token for Mjolnir it self. If you made Mjolnir Admin you can just use the Mjolnir token.
 
 ## 4. Create a management room
 
