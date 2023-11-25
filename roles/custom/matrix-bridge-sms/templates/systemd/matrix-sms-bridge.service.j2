@@ -14,7 +14,7 @@ PartOf=matrix.target
 [Service]
 Type=simple
 Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
-ExecStartPre=-{{ matrix_host_command_docker }} kill matrix-sms-bridge
+ExecStartPre=-{{ matrix_host_command_docker }} stop matrix-sms-bridge
 ExecStartPre=-{{ matrix_host_command_docker }} rm matrix-sms-bridge
 
 ExecStart={{ matrix_host_command_docker }} run --rm --name matrix-sms-bridge \
@@ -33,7 +33,7 @@ ExecStart={{ matrix_host_command_docker }} run --rm --name matrix-sms-bridge \
 			{% endfor %}
 			{{ matrix_sms_bridge_docker_image }}
 
-ExecStop=-{{ matrix_host_command_docker }} kill matrix-sms-bridge
+ExecStop=-{{ matrix_host_command_docker }} stop matrix-sms-bridge
 ExecStop=-{{ matrix_host_command_docker }} rm matrix-sms-bridge
 Restart=always
 RestartSec=30

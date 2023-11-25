@@ -9,6 +9,7 @@ After={{ service }}
 Wants={{ service }}
 {% endfor %}
 DefaultDependencies=no
+PartOf=matrix.target
 
 [Service]
 Type=simple
@@ -37,4 +38,4 @@ RestartSec=30
 SyslogIdentifier={{ matrix_hookshot_container_url }}
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=matrix.target
