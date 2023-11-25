@@ -15,6 +15,7 @@ Wants={{ service }}
 Wants={{ matrix_synapse_worker_details.name }}.service
 {% endfor %}
 {% endif %}
+
 DefaultDependencies=no
 PartOf=matrix.target
 
@@ -81,4 +82,3 @@ SyslogIdentifier=matrix-synapse
 
 [Install]
 WantedBy=matrix.target
-
