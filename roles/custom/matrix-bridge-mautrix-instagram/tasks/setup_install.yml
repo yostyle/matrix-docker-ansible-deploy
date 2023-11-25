@@ -47,6 +47,8 @@
       dockerfile: Dockerfile
       path: "{{ matrix_mautrix_instagram_docker_src_files_path }}"
       pull: true
+      args:
+        TARGETARCH: "{{ matrix_architecture }}"
   when: "matrix_mautrix_instagram_container_image_self_build | bool"
 
 - name: Ensure mautrix-instagram config.yaml installed

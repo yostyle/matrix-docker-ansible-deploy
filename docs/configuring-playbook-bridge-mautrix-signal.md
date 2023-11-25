@@ -10,6 +10,7 @@ Use the following playbook configuration:
 
 ```yaml
 matrix_mautrix_signal_enabled: true
+matrix_mautrix_signal_admins: {"@YOUR_USER:YOUR_DOMAIN": "admin"}
 ```
 
 There are some additional things you may wish to configure about the bridge before you continue.

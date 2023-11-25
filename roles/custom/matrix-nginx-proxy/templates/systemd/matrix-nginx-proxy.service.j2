@@ -8,12 +8,14 @@ After={{ service }}
 {% for service in matrix_nginx_proxy_systemd_wanted_services_list %}
 Wants={{ service }}
 {% endfor %}
+After=network-online.target
 DefaultDependencies=no
+PartOf=matrix.target
 
 [Service]
 Type=simple
 Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
-ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} kill matrix-nginx-proxy 2>/dev/null || true'
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop matrix-nginx-proxy 2>/dev/null || true'
 ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm matrix-nginx-proxy 2>/dev/null || true'
 
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
@@ -21,7 +23,18 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
 			--name=matrix-nginx-proxy \
 			--log-driver=none \
 			--user={{ matrix_user_uid }}:{{ matrix_user_gid }} \
-			--cap-drop=ALL \
+			--cap-drop=AUDIT_WRITE \
+			--cap-drop=CHOWN \
+			--cap-drop=DAC_OVERRIDE \
+			--cap-drop=FOWNER \
+			--cap-drop=FSETID \
+			--cap-drop=KILL \
+			--cap-drop=MKNOD \
+			--cap-drop=SETFCAP \
+			--cap-drop=SETGID \
+			--cap-drop=SETPCAP \
+			--cap-drop=SETUID \
+			--cap-drop=SYS_CHROOT \
 			--read-only \
 			--tmpfs=/tmp:rw,noexec,nosuid,size={{ matrix_nginx_proxy_tmp_directory_size_mb }}m \
 			--label-file={{ matrix_nginx_proxy_base_path }}/labels \
@@ -50,13 +63,16 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
 			{% endfor %}
 			{{ matrix_nginx_proxy_docker_image }}
 
+ExecStop=-{{ matrix_host_command_sh }} -c '{{ matrix_host_command_docker }} stop matrix-nginx-proxy 2>/dev/null'
+ExecStop=-{{ matrix_host_command_sh }} -c '{{ matrix_host_command_docker }} rm matrix-nginx-proxy 2>/dev/null'
+ExecReload={{ matrix_host_command_docker }} exec matrix-nginx-proxy /usr/sbin/nginx -s reload
 {% for network in matrix_nginx_proxy_container_additional_networks %}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} matrix-nginx-proxy
 {% endfor %}
 
 ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach matrix-nginx-proxy
 
-ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} kill matrix-nginx-proxy 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop matrix-nginx-proxy 2>/dev/null || true'
 ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm matrix-nginx-proxy 2>/dev/null || true'
 ExecReload={{ devture_systemd_docker_base_host_command_docker }} exec matrix-nginx-proxy /usr/sbin/nginx -s reload
 Restart=always
@@ -64,4 +80,4 @@ RestartSec=30
 SyslogIdentifier=matrix-nginx-proxy
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=matrix.target

@@ -1,0 +1,21 @@
+---
+
+- name: Ensure dnf packages are installed
+  yum:
+    name:
+      - "{{ matrix_ntpd_package }}"
+      - fuse
+      - git
+    state: latest
+    update_cache: true
+
+- name: Ensure Docker is installed
+  yum:
+    name:
+      - "{{ matrix_docker_package_name }}"
+    state: latest
+  when: matrix_docker_installation_enabled|bool
+
+- name: Ensure Docker python library is installed
+  pip:
+    name: docker

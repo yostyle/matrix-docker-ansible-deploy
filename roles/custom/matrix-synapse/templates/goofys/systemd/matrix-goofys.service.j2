@@ -4,11 +4,12 @@ Description=Matrix Goofys media store
 After=docker.service
 Requires=docker.service
 DefaultDependencies=no
+PartOf=matrix.target
 
 [Service]
 Type=simple
 Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
-ExecStartPre=-{{ devture_systemd_docker_base_host_command_docker }} kill %n
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_docker }} stop %n
 ExecStartPre=-{{ devture_systemd_docker_base_host_command_docker }} rm %n
 
 ExecStart={{ devture_systemd_docker_base_host_command_docker }} run --rm --name %n \
@@ -36,4 +37,4 @@ RestartSec=5
 SyslogIdentifier=matrix-goofys
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=matrix.target

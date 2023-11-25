@@ -4,7 +4,6 @@
 
 matrix_mx_puppet_steam_enabled: true
 
-matrix_mx_puppet_steam_container_image_self_build: false
 matrix_mx_puppet_steam_container_image_self_build_repo: "https://github.com/icewind1991/mx-puppet-steam.git"
 matrix_mx_puppet_steam_container_image_self_build_repo_version: "{{ 'master' if matrix_mx_puppet_steam_version == 'latest' else matrix_mx_puppet_steam_version }}"
 

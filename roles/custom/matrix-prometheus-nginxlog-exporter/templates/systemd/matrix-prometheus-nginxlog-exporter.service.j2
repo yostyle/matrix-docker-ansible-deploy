@@ -9,6 +9,7 @@ After={{ service }}
 Wants={{ service }}
 {% endfor %}
 DefaultDependencies=no
+PartOf=matrix.target
 
 [Service]
 Type=simple
@@ -43,4 +44,4 @@ RestartSec=30
 SyslogIdentifier={{ matrix_prometheus_nginxlog_exporter_container_hostname }}
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=matrix.target
